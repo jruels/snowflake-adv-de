@@ -1,0 +1,25 @@
+name: pysnowpark
+channels:
+  - https://repo.anaconda.com/pkgs/snowflake
+  - nodefaults
+dependencies:
+  - python=3.9
+  - pip
+  - pip:
+    # Snowpark
+    - snowflake-snowpark-python[pandas]==1.6.1
+    - snowflake-ml-python==1.0.7
+    # Basics
+    - pandas==1.5.3
+    - numpy==1.23.5
+    # ML
+    - scikit-learn==1.2.2
+    - lightgbm==3.3.5
+    - xgboost==1.7.3
+    # Visualization
+    - seaborn==0.12.2
+    - matplotlib==3.7.1
+    # Misc
+    - cloudpickle==2.0.0
+    - jupyter==1.0.0
+    - imbalanced-learn==0.10.1
