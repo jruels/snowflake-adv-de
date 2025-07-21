@@ -1,0 +1,60 @@
+USE ROLE ACCOUNTADMIN;
+USE WAREHOUSE COMPUTE_WH;
+USE DATABASE DAY1;
+USE SCHEMA RAW;
+
+
+CREATE OR REPLACE STAGE BULKLOADSTAGE;
+
+List @BULKLOADSTAGE;
+
+CREATE OR REPLACE TABLE BULKLOAD_TABLE
+(
+ID INTEGER,
+NAME VARCHAR
+);
+
+--To Load files to internal stage
+
+--PUT file:////Users/srinikoms/Desktop/Training2025/Employee1.csv @BULKLOADSTAGE;
+--PUT file:////Users/srinikoms/Desktop/Training2025/Employee2.csv @BULKLOADSTAGE;
+--PUT file:////Users/srinikoms/Desktop/Training2025/Employee3.csv @BULKLOADSTAGE;
+--PUT file:////Users/srinikoms/Desktop/Training2025/Employee4.csv @BULKLOADSTAGE;
+--PUT file:////Users/srinikoms/Desktop/Training2025/Employee5.csv @BULKLOADSTAGE;
+
+List @BULKLOADSTAGE;
+
+
+COPY INTO BULKLOAD_TABLE(ID,NAME) 
+FROM (
+    SELECT 
+        $1::INT, 
+        $2::VARCHAR
+    FROM @BULKLOADSTAGE 
+    )
+FILE_FORMAT = (TYPE = CSV FIELD_DELIMITER = ',' SKIP_HEADER = 1);
+
+SELECT * FROM BULKLOAD_TABLE;
+
+
+-- Load the file name from the stage to the table
+
+CREATE OR REPLACE TABLE BULKLOAD_TABLE_FILE_NAME
+(
+ID INTEGER,
+NAME VARCHAR,
+FILE_NAME VARCHAR
+);
+
+
+COPY INTO BULKLOAD_TABLE_FILE_NAME(ID,NAME,FILE_NAME) 
+FROM (
+    SELECT 
+        $1::INT, 
+        $2::VARCHAR,
+        METADATA$FILENAME
+    FROM @BULKLOADSTAGE 
+    )
+FILE_FORMAT = (TYPE = CSV FIELD_DELIMITER = ',' SKIP_HEADER = 1);
+
+SELECT * FROM BULKLOAD_TABLE_FILE_NAME;

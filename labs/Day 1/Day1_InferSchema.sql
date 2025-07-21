@@ -1,0 +1,58 @@
+USE ROLE ACCOUNTADMIN;
+USE WAREHOUSE COMPUTE_WH;
+USE DATABASE DAY1;
+USE SCHEMA RAW;
+
+CREATE OR REPLACE STAGE INFERSTAGE;
+
+List @INFERSTAGE;
+
+-- PUT file:////Users/srinikoms/Desktop/Training2025/Employee1.csv @INFERSTAGE;
+
+CREATE OR REPLACE FILE FORMAT CSV_FORMAT
+TYPE = CSV FIELD_DELIMITER = ',' 
+PARSE_HEADER=TRUE;
+
+-- Infer the schema based on the file loaded
+SELECT *
+  FROM TABLE(
+    INFER_SCHEMA(
+      LOCATION=>'@INFERSTAGE'
+      , FILE_FORMAT=>'CSV_FORMAT'
+      )
+    );
+
+-- Generate the columns descriptions
+SELECT GENERATE_COLUMN_DESCRIPTION(ARRAY_AGG(OBJECT_CONSTRUCT(*)), 'table') AS COLUMNS
+  FROM TABLE(
+    INFER_SCHEMA(
+      LOCATION => '@INFERSTAGE'
+      , FILE_FORMAT=>'CSV_FORMAT'
+      )
+    );
+
+-- Create a table based on the infererred schema.
+CREATE OR REPLACE TABLE INFERTABLE
+  USING TEMPLATE (
+    SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
+      FROM TABLE(
+        INFER_SCHEMA(
+          LOCATION=>'@INFERSTAGE',
+          FILE_FORMAT=>'CSV_FORMAT',
+          IGNORE_CASE => TRUE
+        )
+      ));
+
+-- Check the table DDL
+
+SELECT GET_DDL('TABLE','INFERTABLE');
+
+-- Copy data from stage to table
+
+COPY INTO INFERTABLE FROM @INFERSTAGE 
+FILE_FORMAT = 'CSV_FORMAT'
+MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE;
+
+
+SELECT * FROM INFERTABLE;
+

@@ -1,0 +1,69 @@
+USE ROLE ACCOUNTADMIN;
+USE WAREHOUSE COMPUTE_WH;
+USE DATABASE DAY1;
+USE SCHEMA RAW;
+
+
+--create employees_raw table
+CREATE OR REPLACE TABLE EMPLOYEES_RAW(
+ID NUMBER,
+NAME VARCHAR(50),
+SALARY NUMBER
+);
+
+--https://docs.snowflake.com/en/_images/table-streams-offset.png
+
+--Insert three records into table
+INSERT INTO EMPLOYEES_RAW VALUES (101,'Tony',25000);
+INSERT INTO EMPLOYEES_RAW VALUES (102,'Chris',55000);
+INSERT INTO EMPLOYEES_RAW VALUES (103,'Bruce',40000);
+
+
+--create employees table
+CREATE OR REPLACE TABLE EMPLOYEES(
+ID NUMBER,
+NAME VARCHAR(50),
+SALARY NUMBER
+);
+
+
+--Inserting initial set of records from raw table
+INSERT INTO EMPLOYEES SELECT * FROM EMPLOYEES_RAW;
+
+--create stream
+CREATE OR REPLACE STREAM MY_STREAM ON TABLE EMPLOYEES_RAW;
+
+
+--Create Task
+CREATE OR REPLACE TASK MY_FIRST_DATA_PIPELINE
+WAREHOUSE = COMPUTE_WH --(If no warehouse is provided, it will be a serverless task)
+--TARGET_COMPLETION_INTERVAL='1 MINUTE' (required parameter for serverless tasks)
+WHEN SYSTEM$STREAM_HAS_DATA('MY_STREAM')
+AS
+MERGE INTO EMPLOYEES a USING MY_STREAM b ON a.ID = b.ID
+    WHEN MATCHED AND metadata$action = 'DELETE' AND metadata$isupdate = 'FALSE'
+        THEN DELETE
+    WHEN MATCHED AND metadata$action = 'INSERT' AND metadata$isupdate = 'TRUE'
+        THEN UPDATE SET a.NAME = b. NAME, a.SALARY = b.SALARY
+    WHEN NOT MATCHED AND metadata$action = 'INSERT' AND metadata$isupdate = 'FALSE'
+        THEN INSERT (ID, NAME, SALARY) VALUES (b.ID, b.NAME, b.SALARY);
+
+--Resume task. By default it is suspended
+ALTER TASK MY_FIRST_DATA_PIPELINE RESUME;
+
+
+--Current Version
+SELECT * FROM EMPLOYEES;
+ 
+--Insert two records
+INSERT INTO EMPLOYEES_RAW VALUES (104,'Clark',35000);
+INSERT INTO EMPLOYEES_RAW VALUES (105,'Steve',30000);
+
+--Update two records
+UPDATE EMPLOYEES_RAW SET SALARY = '50000' WHERE ID = '102';
+UPDATE EMPLOYEES_RAW SET SALARY = '45000' WHERE ID = '103';
+
+
+--Delete one record
+DELETE FROM EMPLOYEES_RAW WHERE ID = '102';
+
