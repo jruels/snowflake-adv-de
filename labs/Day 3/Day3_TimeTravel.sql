@@ -3,6 +3,14 @@ USE WAREHOUSE COMPUTE_WH;
 USE DATABASE DAY3;
 USE SCHEMA RAW;
 
+/*=============Types of Tables
+
+1. Permanent - TimeTravel + Fail Safe
+2. Transient - TimeTravel only
+3. Temporary - Limited TimeTravel + No Fail Safe
+3. External - No Time Travel , No Fail Safe
+
+===============*/
 
 
 select current_timestamp();--2025-07-23 18:19:31.314 -0700
